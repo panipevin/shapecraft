@@ -149,6 +149,39 @@ button.kpi:hover{border-color:var(--muted)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .nav .brand{--brandc:var(--logo-color-dark)}}
 :root[data-theme="dark"] .nav .brand{--brandc:var(--logo-color-dark)}
 @media (max-width:480px){.nav .brand{width:calc(var(--logo-width) * .75)}}
+/* receipt printer animation */
+#rp{border:0;padding:0;background:transparent;color:#1b1b1b;max-width:100vw}
+#rp::backdrop{background:rgba(0,0,0,.6)}
+.rp-root{position:relative;display:flex;flex-direction:column;align-items:center;width:min(384px,calc(100vw - 32px));padding:24px 0}
+.rp-machine{position:relative;isolation:isolate;overflow:hidden;width:100%;border-radius:24px;border:1px solid #0a0d0c;background:#2d3231;padding:12px 12px 32px;
+  box-shadow:0 20px 36px -20px rgba(0,0,0,.55),0 6px 14px -8px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.14),inset 0 -1px 0 rgba(0,0,0,.55)}
+.rp-header{position:relative;z-index:1;display:flex;height:44px;align-items:flex-start;justify-content:space-between}
+.rp-header img{width:24px;height:24px;border-radius:4px}
+.rp-btn{font:inherit;font-size:13px;font-weight:600;color:#e8eceb;background:#444b4a;border:1px solid #151918;border-radius:8px;padding:4px 12px;cursor:pointer;box-shadow:0 2px 0 #151918}
+.rp-btn:active{transform:translateY(1px);box-shadow:0 1px 0 #151918}
+.rp-screen{position:relative;z-index:1;overflow:hidden;border-radius:12px;border:1px solid #000;background:#0b0f0e;color:#f1f4f3;padding:16px;box-shadow:inset 0 0 24px 4px rgba(0,0,0,.5)}
+.rp-sum{display:flex;justify-content:space-between;gap:12px;font-size:14px}
+.rp-sum p{margin:0;overflow-wrap:anywhere}
+.rp-sum p+p{color:#9fb0ac;font-size:13px}
+.rp-status{display:flex;align-items:center;gap:8px;margin-top:16px;color:#9fb0ac;font-size:12px;font-weight:500}
+.rp-ind{display:grid;place-items:center;width:20px;height:20px;flex:none}
+.rp-spin{animation:rp-rot .8s linear infinite;transform-origin:center}
+.rp-in{animation:rp-up .18s cubic-bezier(.23,1,.32,1)}
+@keyframes rp-rot{to{transform:rotate(360deg)}}
+@keyframes rp-up{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.rp-slot{position:absolute;left:24px;right:24px;bottom:12px;z-index:3;height:8px;border-radius:4px;border:1px solid #000;background:#050707;box-shadow:inset 0 1px 3px #000}
+.rp-output{position:relative;z-index:5;margin-top:-16px;width:calc(80% + 48px);max-width:100%;height:420px;overflow:hidden;padding:0 24px}
+.rp-shade{position:absolute;left:24px;right:24px;top:-4px;z-index:2;height:8px;background:rgba(0,0,0,.75);filter:blur(6px);opacity:0;transition:opacity .16s}
+.rp-root[data-stage="printing"] .rp-shade,.rp-root[data-stage="complete"] .rp-shade{opacity:1}
+.rp-feed{position:relative;filter:drop-shadow(0 8px 12px rgba(0,0,0,.28));opacity:0}
+.rp-paper{min-height:320px;padding:28px 24px 32px;background:linear-gradient(#fcfbf7,#f6f4ed);color:#1b1b1b;font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:13px;line-height:1.5}
+.rp-paper h2{margin:0;font-size:16px;letter-spacing:.08em;text-transform:uppercase}
+.rp-paper hr{border:0;border-top:1px dashed #8d8d86;margin:12px 0}
+.rp-paper .rp-sm{margin:2px 0 0;color:#5f5f59;font-size:12px}
+.rp-row{display:flex;justify-content:space-between;gap:12px;margin:4px 0}
+.rp-row span:last-child{text-align:right;overflow-wrap:anywhere}
+.rp-total{font-size:15px;font-weight:700}
+@media (prefers-reduced-motion:reduce){.rp-spin,.rp-in{animation:none}}
 </style>
 </head>
 <body>
@@ -379,6 +412,31 @@ button.kpi:hover{border-color:var(--muted)}
   <footer>3dPERCEPTIVE gives estimates. Check the numbers against your own costs before quoting a customer.<p class="note" id="syncStat" style="margin:6px 0 0"></p></footer>
 </div>
 
+<dialog id="rp" aria-label="Quote receipt printer">
+  <section class="rp-root" id="rpRoot" data-stage="processing">
+    <div class="rp-machine">
+      <div class="rp-header">
+        <img src="favicon-32.png" alt="" width="24" height="24">
+        <button type="button" class="rp-btn" id="rpClose">Close</button>
+      </div>
+      <div class="rp-screen">
+        <div class="rp-sum"><div><p id="rpName"></p><p id="rpSub"></p></div><strong id="rpTotal"></strong></div>
+        <div class="rp-status">
+          <span class="rp-ind" aria-hidden="true">
+            <svg id="rpSpin" class="rp-spin" viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-dasharray="40 60"/></svg>
+            <svg id="rpTick" class="rp-in" viewBox="0 0 24 24" width="18" height="18" hidden><circle cx="12" cy="12" r="11" fill="#34d399"/><path d="M7 12.5l3.2 3.2L17 9" fill="none" stroke="#06281d" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          <div id="rpStatus" role="status" aria-live="polite"></div>
+        </div>
+      </div>
+      <div class="rp-slot" aria-hidden="true"></div>
+    </div>
+    <div class="rp-output" id="rpOut">
+      <div class="rp-shade" aria-hidden="true"></div>
+      <div class="rp-feed" id="rpFeed" aria-hidden="true"><article class="rp-paper" id="rpPaper"></article></div>
+    </div>
+  </section>
+</dialog>
 <script>
 (function(){
   var $=function(id){return document.getElementById(id)};
@@ -514,13 +572,70 @@ button.kpi:hover{border-color:var(--muted)}
     $("mets").innerHTML=mt.map(function(x,i){return '<div class="met'+(i===6?' key':'')+'"><span>'+x[0]+'</span><b>'+x[1]+'</b></div>'}).join("");
   }
 
+  /* receipt printer animation shown after Save quote */
+  var RP_KF=["translateY(calc(-100% + 2px))","translateY(-91%)","translateY(-91%)","translateY(-81%)","translateY(-81%)","translateY(-70%)","translateY(-70%)","translateY(-58%)","translateY(-58%)","translateY(-45%)","translateY(-45%)","translateY(-32%)","translateY(-32%)","translateY(-20%)","translateY(-20%)","translateY(-10%)","translateY(-10%)","translateY(-3%)","translateY(-3%)","translateY(0%)"];
+  var RP_T=[0,0.075,0.105,0.18,0.21,0.285,0.315,0.39,0.42,0.495,0.525,0.6,0.63,0.705,0.735,0.81,0.84,0.915,0.945,1];
+  var rpTimers=[], rpAnim=null, rpClip=(function(){
+    var n=40,depth=4,pts=[];
+    for(var i=0;i<n*2;i++)pts.push((100-(i+1)*100/(n*2))+"% "+(i%2===0?"100%":"calc(100% - "+depth+"px)"));
+    return "polygon(0 0, 100% 0, 100% calc(100% - "+depth+"px), "+pts.join(", ")+")";
+  })();
+  var RP_LABEL={processing:"Processing your quote",printing:"Printing your receipt",complete:"Quote saved"};
+  function rpClear(){rpTimers.forEach(clearTimeout);rpTimers=[];if(rpAnim){rpAnim.cancel();rpAnim=null}}
+  function rpStage(st){
+    $("rpRoot").setAttribute("data-stage",st);
+    var el=$("rpStatus");el.textContent=RP_LABEL[st];el.classList.remove("rp-in");void el.offsetWidth;el.classList.add("rp-in");
+    $("rpSpin").hidden=st==="complete";$("rpTick").hidden=st!=="complete";
+    $("rpFeed").setAttribute("aria-hidden",st!=="complete");
+  }
+  function rpBuild(o){
+    var u=o.units||1,total=o.priceTax*u,sub=o.unitPrice*u,p=$("rpPaper");
+    $("rpName").textContent=o.nm;$("rpSub").textContent=u+(u===1?" piece":" pieces");$("rpTotal").textContent=fmt.format(total);
+    p.textContent="";
+    function row(a,b,cls){var d=mk("div",{className:"rp-row"+(cls?" "+cls:"")});d.appendChild(mk("span",{textContent:a}));d.appendChild(mk("span",{textContent:b}));p.appendChild(d)}
+    p.appendChild(mk("h2",{textContent:"3dPERCEPTIVE"}));
+    p.appendChild(mk("p",{className:"rp-sm",textContent:"Quote · "+new Date(o.t||Date.now()).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}));
+    p.appendChild(mk("hr"));
+    row("Part",o.nm);
+    (o.mats||[]).forEach(function(m){row(m.n+(m.c?" ("+m.c+")":""),Math.round(m.q)+" "+m.u)});
+    row("Units",String(u));
+    row("Price each",fmt.format(o.unitPrice));
+    p.appendChild(mk("hr"));
+    if(o.vat>0){row("Subtotal",fmt.format(sub));row("GST "+Math.round(o.vat*1000)/10+"%",fmt.format(total-sub))}
+    row("Total",fmt.format(total),"rp-total");
+    p.appendChild(mk("hr"));
+    p.appendChild(mk("p",{className:"rp-sm",textContent:"Saved to your quotes. Thank you."}));
+  }
+  function rpPrint(){
+    var feed=$("rpFeed"),move=!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches);
+    rpStage("printing");
+    feed.style.transition="opacity .16s cubic-bezier(.23,1,.32,1)";feed.style.opacity="1";
+    function finish(){feed.style.transform="translateY(0%)";if(rpAnim){rpAnim.cancel();rpAnim=null}rpStage("complete")}
+    if(!move||!feed.animate){feed.style.transform="translateY(0%)";rpTimers.push(setTimeout(finish,400));return}
+    rpAnim=feed.animate(RP_KF.map(function(t,i){return {offset:RP_T[i],transform:t}}),{duration:1750,easing:"linear",fill:"forwards"});
+    rpAnim.onfinish=finish;
+  }
+  function rpOpen(o){
+    rpClear();rpBuild(o);
+    var feed=$("rpFeed"),d=$("rp");
+    feed.style.transition="none";feed.style.opacity="0";feed.style.transform="translateY(calc(-100% + 2px))";
+    $("rpPaper").style.clipPath=rpClip;
+    rpStage("processing");
+    if(!d.open){if(d.showModal)d.showModal();else d.setAttribute("open","")}
+    $("rpOut").style.height=($("rpPaper").offsetHeight+16)+"px";
+    rpTimers.push(setTimeout(rpPrint,900));
+  }
+  $("rpClose").addEventListener("click",function(){$("rp").close()});
+  $("rp").addEventListener("close",rpClear);
+  $("rp").addEventListener("click",function(e){if(e.target===this)this.close()});
+
   /* storage */
   function load(){try{return JSON.parse(localStorage.getItem(K)||"[]")}catch(e){return []}}
   function store(a){try{localStorage.setItem(K,JSON.stringify(a))}catch(e){}markDirty()}
   function updSq(){var n=load().filter(function(q){return q.status!=="Completed"}).length;$("sqn").textContent=n?n+(n===1?" quote":" quotes")+" saved.":"Nothing saved yet."}
   $("save").addEventListener("click",function(){
     var a=load(),o=Object.assign({id:Date.now(),status:"Draft"},last);
-    o.nm=o.nm||"Untitled part";a.unshift(o);store(a.slice(0,500));updSq();
+    o.nm=o.nm||"Untitled part";a.unshift(o);store(a.slice(0,500));updSq();rpOpen(o);
     var b=this;b.textContent="Saved";setTimeout(function(){b.textContent="Save quote"},1400);
   });
   $("copy").addEventListener("click",function(){
