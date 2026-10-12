@@ -705,25 +705,29 @@ button.kpi:hover{border-color:var(--muted)}
 
   /* Google Sheet sync */
   var SK="shapecraft.sheet", DK="shapecraft.dirty", pushT=null;
+  var rev=0, pushing=false, again=false; // rev counts local changes, so a slow load can never overwrite them
   function cfg(){try{return JSON.parse(localStorage.getItem(SK)||"null")}catch(e){return null}}
   function setStat(t){["sMsg","syncStat"].forEach(function(id){var e=$(id);if(e)e.textContent=t})}
   function hhmm(){return new Date().toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"})}
   function syncFail(err){setStat(err&&err.message==="Wrong passcode"?"The passcode doesn't match the one in your Apps Script.":"Couldn't reach your Google Sheet. Check the URL, the passcode, and that the web app is shared with Anyone. Your data is safe on this device.")}
   function markDirty(){
+    rev++;
     if(!cfg())return;
     try{localStorage.setItem(DK,"1")}catch(e){}
-    clearTimeout(pushT);pushT=setTimeout(push,800);
+    clearTimeout(pushT);pushT=setTimeout(push,300);
   }
   function push(){
     var c=cfg();if(!c)return Promise.resolve();
+    if(pushing){again=true;return Promise.resolve()}
+    pushing=true;var r0=rev;
     setStat("Saving to your Google Sheet…");
     return fetch(c.url,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({pass:c.pass,quotes:load(),expenses:loadX()})})
       .then(function(r){return r.json()})
       .then(function(j){
         if(j.error)throw new Error(j.error);
-        try{localStorage.removeItem(DK)}catch(e){}
-        setStat("Saved to your Google Sheet at "+hhmm()+".");
-      }).catch(syncFail);
+        if(rev===r0){try{localStorage.removeItem(DK)}catch(e){}setStat("Saved to your Google Sheet at "+hhmm()+".")}
+      }).catch(syncFail)
+      .then(function(){pushing=false;if(again){again=false;return push()}});
   }
   function merge(a,b){
     var seen={},out=[];
@@ -733,11 +737,13 @@ button.kpi:hover{border-color:var(--muted)}
   function refresh(){if(!$("vDash").hidden)renderDash();if(!$("vExp").hidden)renderExp()}
   function pull(first){
     var c=cfg();if(!c)return Promise.resolve();
+    var r0=rev;
     setStat("Loading from your Google Sheet…");
     return fetch(c.url+(c.url.indexOf("?")<0?"?":"&")+"pass="+encodeURIComponent(c.pass))
       .then(function(r){return r.json()})
       .then(function(j){
         if(j.error)throw new Error(j.error);
+        if(rev!==r0)return push(); // you changed something while this was loading: keep your changes
         var rq=j.quotes||[],rx=j.expenses||[],q=rq,x=rx;
         if(first){q=merge(rq,load());x=merge(rx,loadX())}
         else if(!rq.length&&!rx.length&&(load().length||loadX().length))return push();
@@ -749,11 +755,11 @@ button.kpi:hover{border-color:var(--muted)}
   }
   function sync(){var d=false;try{d=!!localStorage.getItem(DK)}catch(e){}return d?push():pull(false)}
   $("sSave").addEventListener("click",function(){
-    var url=$("sUrl").value.trim(),pass=$("sPass").value;
+    var url=$("sUrl").value.trim(),pass=$("sPass").value,had=cfg();
     if(!/^https:\/\/script\.google\.com\/.+\/exec$/.test(url)){setStat("Paste the web app URL. It ends in /exec.");return}
     if(!pass){setStat("Enter the passcode you set in the Apps Script.");return}
     try{localStorage.setItem(SK,JSON.stringify({url:url,pass:pass}))}catch(e){setStat("This browser blocked saving the settings.");return}
-    pull(true);
+    pull(!had||had.url!==url);
   });
   $("sNow").addEventListener("click",function(){if(!cfg()){setStat("Connect a Google Sheet first.");return}sync()});
   $("sOff").addEventListener("click",function(){
