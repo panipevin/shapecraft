@@ -1,4 +1,4 @@
-# Shapecraft: 3D printing cost calculator
+# 3dPERCEPTIVE: 3D printing cost calculator
 
 A free cost calculator, quote tracker, dashboard and expense log for 3D printed parts. Your data is saved in your browser and, if you connect it, in your own Google Sheet.
 
@@ -7,6 +7,8 @@ A free cost calculator, quote tracker, dashboard and expense log for 3D printed 
 | File | What it is | Goes to GitHub? |
 |---|---|---|
 | `index.html` | The whole website | Yes |
+| `manifest.webmanifest`, `sw.js` | Make the site installable as an app | Yes |
+| `favicon.ico`, `favicon-32.png`, `apple-touch-icon.png`, `icon-192.png`, `icon-512.png`, `icon-maskable-512.png` | Browser tab icon and app icons | Yes |
 | `README.md` | These instructions | Yes |
 | `Code.gs` | Google Sheet connector (contains your passcode) | **No.** Paste it into Apps Script only |
 
@@ -14,7 +16,7 @@ A free cost calculator, quote tracker, dashboard and expense log for 3D printed 
 
 ## Part 1: Connect a Google Sheet (your database)
 
-1. Go to [sheets.google.com](https://sheets.google.com) and create a new blank sheet. Name it **Shapecraft Data**.
+1. Go to [sheets.google.com](https://sheets.google.com) and create a new blank sheet. Name it **3dPERCEPTIVE Data**.
 2. In the sheet, open **Extensions > Apps Script**.
 3. Delete the sample code, then paste in everything from `Code.gs`.
 4. At the top, change `change-this-passcode` to a passcode only you know. Click **Save**.
@@ -62,7 +64,7 @@ If you change the script code later, use **Deploy > Manage deployments > Edit > 
 ```bash
 git init
 git add index.html README.md
-git commit -m "Shapecraft calculator"
+git commit -m "3dPERCEPTIVE calculator"
 git branch -M main
 git remote add origin https://github.com/YOUR-USERNAME/shapecraft.git
 git push -u origin main
@@ -80,3 +82,15 @@ Buy a domain, then in **Settings > Pages > Custom domain** enter it and follow G
 ## Notes
 - Prices are in Indian rupees (₹). Defaults are starting values, so change them to your real costs.
 - The calculator gives estimates. Check the numbers against your own costs before quoting a customer.
+
+---
+
+## Install it as an app
+
+Upload every file in the table above to the same folder of your repository, then open the live site.
+
+- **Android (Chrome):** menu (three dots) > **Install app** or **Add to Home screen**.
+- **iPhone / iPad (Safari):** Share button > **Add to Home Screen**.
+- **Laptop (Chrome or Edge):** click the install icon at the right end of the address bar, or menu > **Install 3dPERCEPTIVE**.
+
+On iPhone, an app added to the Home Screen keeps its own saved data, separate from Safari. Open the app and connect your Google Sheet again in the Google Sheet tab.
