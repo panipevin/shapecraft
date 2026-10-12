@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Shapecraft – 3D printing cost calculator (₹)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EDF0ED; --panel:#FFFFFF; --ink:#1B2422; --muted:#5E6B68; --line:#D2D9D6;
+  --accent:#0E6B6B; --accent-ink:#FFFFFF; --hi:#F2A900; --hi-ink:#2A1E00;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#0F1716; --panel:#172120; --ink:#E6EEEC; --muted:#93A5A1; --line:#2A3836; --accent:#13807F; --accent-ink:#FFFFFF; --hi:#F2B93B; --hi-ink:#2A1E00;}
+}
+:root[data-theme="dark"]{--bg:#0F1716; --panel:#172120; --ink:#E6EEEC; --muted:#93A5A1; --line:#2A3836; --accent:#13807F; --accent-ink:#FFFFFF; --hi:#F2B93B; --hi-ink:#2A1E00;}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.5;font-variant-numeric:tabular-nums}
+.wrap{max-width:1060px;margin:0 auto;padding:28px 20px 56px}
+header{display:flex;justify-content:space-between;align-items:end;gap:16px;flex-wrap:wrap;margin-bottom:24px}
+h1{margin:0;font-size:clamp(28px,4.4vw,42px);line-height:1.05;letter-spacing:-.03em;font-weight:700}
+.lede{margin:8px 0 0;color:var(--muted);max-width:52ch}
+.cur{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted)}
+select,input{font:inherit;color:var(--ink);background:var(--panel);border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;width:100%}
+select{width:auto}
+:is(input,select,button,summary):focus-visible,.tile:has(:focus-visible){outline:3px solid var(--accent);outline-offset:2px}
+.grid{display:grid;grid-template-columns:1.1fr .9fr;gap:20px;align-items:start}
+.card{background:var(--panel);border-radius:16px;padding:22px;border:1px solid var(--line);margin-bottom:16px}
+h2{font-size:17px;margin:0 0 14px;letter-spacing:-.01em}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--bg);padding:4px;border-radius:12px;margin-bottom:16px}
+.seg button{font:inherit;font-weight:600;border:0;border-radius:9px;padding:10px;background:transparent;color:var(--muted);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--panel);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.fields .full{grid-column:1/-1}
+label{display:block;font-size:13px;font-weight:600;margin-bottom:5px}
+.unit{position:relative}
+.unit input{padding-right:54px}
+.unit span{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--muted);pointer-events:none}
+details{margin-top:4px}
+summary{cursor:pointer;font-weight:600;padding:6px 0;border-radius:6px}
+details .fields{margin-top:12px}
+.note{font-size:13px;color:var(--muted);margin:10px 0 0}
+.result{position:sticky;top:16px}
+.total{border-radius:16px;padding:24px;color:var(--accent-ink);margin-bottom:16px;background:
+  repeating-linear-gradient(0deg,rgba(255,255,255,.08) 0 2px,transparent 2px 7px),var(--accent)}
+.total .k{font-size:14px;opacity:.85}
+.total .big{font-size:clamp(40px,7vw,56px);font-weight:700;letter-spacing:-.03em;line-height:1.05;margin:4px 0 6px}
+.total .s{font-size:14px;opacity:.9}
+.total button{margin-top:16px;font:inherit;font-weight:600;border:0;border-radius:10px;padding:10px 16px;background:var(--hi);color:var(--hi-ink);cursor:pointer}
+.tiers{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{position:relative;display:block;border:1.5px solid var(--line);border-radius:12px;padding:12px;cursor:pointer;margin:0}
+.tile input{position:absolute;opacity:0;inset:0;width:100%;height:100%;cursor:pointer;margin:0}
+.tile:has(input:checked){border-color:var(--hi);box-shadow:inset 0 0 0 1.5px var(--hi)}
+.tile b{display:block;font-size:13px}
+.tile .p{font-size:20px;font-weight:700;letter-spacing:-.02em}
+.tile .t{font-size:12px;color:var(--muted)}
+.tile.custom{grid-column:1/-1}
+.tile.custom .cm{position:relative;z-index:1;display:flex;align-items:center;gap:8px;margin-top:6px}
+.tile.custom input[type=number]{position:static;opacity:1;width:90px;height:auto;padding:6px 8px}
+.rows{display:grid;gap:12px}
+.r{display:grid;grid-template-columns:1fr auto;gap:2px 12px;font-size:14px}
+.r .bar{grid-column:1/-1;height:6px;border-radius:3px;background:var(--bg);overflow:hidden}
+.r .bar i{display:block;height:100%;background:var(--accent);width:0;transition:width .2s}
+.r.sum{border-top:1.5px solid var(--line);padding-top:12px;font-weight:700;font-size:16px}
+@media (prefers-reduced-motion:reduce){.r .bar i{transition:none}}
+@media (max-width:820px){.grid{grid-template-columns:1fr}.result{position:static}}
+@media (max-width:480px){.fields{grid-template-columns:1fr}}
+.nav{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:28px}
+.nav b{font-size:18px;letter-spacing:-.02em}
+.nav a{color:var(--muted);text-decoration:none;font-weight:500;margin-left:18px;padding:4px 0}
+.nav a:hover{color:var(--ink);text-decoration:underline}
+.info{margin-top:44px}
+.info h2{font-size:24px;letter-spacing:-.02em;margin-bottom:16px}
+.steps{padding-left:22px;margin:0;display:grid;gap:10px;max-width:70ch}
+dl.f{display:grid;grid-template-columns:max-content 1fr;gap:10px 22px;margin:0}
+dl.f dt{font-weight:600}dl.f dd{margin:0;color:var(--muted)}
+@media (max-width:600px){dl.f{grid-template-columns:1fr;gap:2px}dl.f dd{margin-bottom:10px}}
+.faq details{border-top:1px solid var(--line);padding:12px 0;margin:0}
+.faq details:last-child{border-bottom:1px solid var(--line)}
+.faq p{margin:8px 0 0;color:var(--muted);max-width:70ch}
+.sq{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:8px 0;border-top:1px solid var(--line);font-size:14px}
+.link{background:none;border:0;color:var(--accent);font:inherit;font-weight:600;cursor:pointer;text-decoration:underline;padding:4px}
+.total .sec{background:transparent;color:var(--accent-ink);border:1.5px solid rgba(255,255,255,.6);margin-left:8px}
+small{color:var(--muted);font-weight:400}
+footer{margin-top:44px;color:var(--muted);font-size:13px;border-top:1px solid var(--line);padding-top:16px}
+.mh{font-size:16px;margin:22px 0 12px}
+.mets{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.met{background:var(--bg);border-radius:12px;padding:12px 14px}
+.met span{display:block;font-size:13px;color:var(--muted)}
+.met b{display:block;font-size:18px;letter-spacing:-.01em;margin-top:2px}
+.met.key{background:var(--accent);color:var(--accent-ink)}
+.met.key span{color:inherit;opacity:.85}
+.mrow{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px;border:1.5px solid var(--line);border-radius:12px;margin-bottom:10px}
+.mrow label{font-size:12px;color:var(--muted);font-weight:500;margin-bottom:3px}
+.mrow .rm{grid-column:1/-1;justify-self:end;margin-top:-4px}
+.nb{background:none;border:0;font:inherit;color:var(--muted);font-weight:500;margin-left:18px;padding:4px 0;cursor:pointer;border-bottom:2px solid transparent}
+.nb[aria-current="page"]{color:var(--ink);font-weight:700;border-bottom-color:var(--hi)}
+.qb{display:grid;grid-template-columns:.7fr 1fr 1fr 1.2fr;gap:4px 8px;font-size:13px}
+.qb div{padding:3px 6px;border-radius:6px}
+.qb .h{color:var(--muted);font-weight:600;font-size:12px}
+.qb .on{background:var(--bg);font-weight:700}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:20px 0}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
+.kpi span{font-size:13px;color:var(--muted);display:block}
+.kpi b{font-size:24px;letter-spacing:-.02em;display:block;margin-top:4px}
+.kpi small{display:block;margin-top:2px}
+.dgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:820px){.dgrid{grid-template-columns:1fr}}
+.hb{display:grid;grid-template-columns:minmax(80px,28%) 1fr auto;gap:10px;align-items:center;font-size:14px;margin-bottom:10px}
+.hb span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hb .tr{height:12px;background:var(--bg);border-radius:6px;overflow:hidden;display:flex}
+.hb .tr i{display:block;height:100%}
+.lg{display:flex;gap:16px;font-size:13px;color:var(--muted);margin-bottom:12px}
+.lg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px}
+.drow{display:grid;grid-template-columns:1fr auto auto;gap:6px 12px;align-items:center;padding:10px 0;border-top:1px solid var(--line);font-size:14px}
+.drow .dm{grid-column:1/-1;color:var(--muted);font-size:13px}
+.drow select{padding:6px 8px;font-size:13px}
+.tile.custom .ct{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.tile.custom .tot{text-align:right}
+.tile.custom .tot .t,.tile.custom .tot .p{display:block}
+.tile.custom .cm{flex-wrap:wrap;gap:8px 18px}
+.tile.custom .cf{display:flex;align-items:center;gap:6px}
+.tile.custom #cWarn{display:block;margin-top:6px}
+button.kpi{font:inherit;color:inherit;text-align:left;width:100%;cursor:pointer}
+button.kpi:hover{border-color:var(--muted)}
+.kpi[aria-expanded="true"]{border-color:var(--hi);box-shadow:inset 0 0 0 1.5px var(--hi)}
+.kpi .chev{float:right;color:var(--muted);font-size:12px;font-style:normal}
+#kDetail h2{margin-bottom:4px}
+.qd{padding:12px 0;border-top:1px solid var(--line);font-size:14px}
+.qd .qt{display:flex;justify-content:space-between;gap:12px}
+.qd p{margin:4px 0 0;color:var(--muted);font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="nav"><b>Shapecraft</b><span><button type="button" class="nb" id="navCalc" aria-current="page">Calculator</button><button type="button" class="nb" id="navDash">Dashboard</button><button type="button" class="nb" id="navExp">Expenditure</button><button type="button" class="nb" id="navSet">Google Sheet</button><a href="#how">How it works</a><a href="#formulas">Formulas</a><a href="#faq">FAQ</a></span></nav>
+  <div id="vCalc">
+  <header id="calc">
+    <div>
+      <h1>What should this print cost?</h1>
+      <p class="lede">Enter the numbers from your slicer. You get your real cost and a selling price at the margin you pick.</p>
+    </div>
+  </header>
+
+  <div class="grid">
+    <section>
+      <div class="card">
+        <h2>Project</h2>
+        <div class="seg" role="group" aria-label="Printing technology">
+          <button type="button" id="tFdm" aria-pressed="true">Filament (FDM)</button>
+          <button type="button" id="tResin" aria-pressed="false">Resin (SLA)</button>
+        </div>
+        <div class="fields">
+          <div class="full"><label for="part">Part name</label><input id="part" type="text" placeholder="e.g. Phone stand"></div>
+          <div class="full"><label for="prof">Printer profile</label><select id="prof" style="width:100%"></select></div>
+          <div class="full"><label>Filaments in this part</label><div id="mats"></div><button type="button" class="link" id="addMat" style="padding-left:0">+ Add another filament or colour</button></div>
+          <div><label for="vat">GST / tax rate</label><div class="unit"><input id="vat" type="number" inputmode="decimal" min="0" step="any" value="0"><span>%</span></div></div>
+          <div><label for="hrs">Print time</label><div class="unit"><input id="hrs" type="number" inputmode="numeric" min="0" step="1" value="3"><span>hrs</span></div></div>
+          <div><label for="min">&nbsp;<span style="position:absolute;left:-9999px">Minutes</span></label><div class="unit"><input id="min" type="number" inputmode="numeric" min="0" max="59" step="1" value="0" aria-label="Print time minutes"><span>min</span></div></div>
+          <div><label for="units">Units in this batch</label><div class="unit"><input id="units" type="number" inputmode="numeric" min="1" step="1" value="1"><span>pcs</span></div></div>
+          <div><label for="setm">Setup time per batch</label><div class="unit"><input id="setm" type="number" inputmode="decimal" min="0" step="any" value="0"><span>min</span></div></div>
+          <div><label for="fail">Expected failure rate</label><div class="unit"><input id="fail" type="number" inputmode="decimal" min="0" max="90" step="any" value="0"><span>%</span></div></div>
+          <p class="note full" style="margin:0">Weight, time and extras are per unit. Setup time happens once for the whole batch.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Time and extras</h2>
+        <div class="fields">
+          <div><label for="lab">Hands-on time</label><div class="unit"><input id="lab" type="number" inputmode="decimal" min="0" step="any" value="15"><span>min</span></div></div>
+          <div><label for="rate">Labor rate per hour</label><div class="unit"><input id="rate" type="number" inputmode="decimal" min="0" step="any" value="200"><span class="cs">₹</span></div></div>
+          <div><label for="hw">Hardware</label><div class="unit"><input id="hw" type="number" inputmode="decimal" min="0" step="any" value="0"><span class="cs">₹</span></div></div>
+          <div><label for="pk">Packaging</label><div class="unit"><input id="pk" type="number" inputmode="decimal" min="0" step="any" value="0"><span class="cs">₹</span></div></div>
+          <div id="consW" hidden><label for="cons">Consumables (IPA, gloves, FEP wear)</label><div class="unit"><input id="cons" type="number" inputmode="decimal" min="0" step="any" value="0"><span class="cs">₹</span></div></div>
+        </div>
+        <p class="note">Hands-on time covers file prep, supports, sanding, and checking the part.</p>
+      </div>
+
+      <div class="card">
+        <details open>
+          <summary>Printer and energy settings</summary>
+          <div class="fields">
+            <div><label for="pc">Printer price</label><div class="unit"><input id="pc" type="number" inputmode="decimal" min="0" step="any" value="25000"><span class="cs">₹</span></div></div>
+            <div><label for="ux">Additional upfront cost</label><div class="unit"><input id="ux" type="number" inputmode="decimal" min="0" step="any" value="0"><span class="cs">₹</span></div></div>
+            <div><label for="life">Expected lifespan</label><div class="unit"><input id="life" type="number" inputmode="decimal" min="0.1" step="any" value="4"><span>years</span></div></div>
+            <div><label for="up">Uptime (share of time printing)</label><div class="unit"><input id="up" type="number" inputmode="decimal" min="1" max="100" step="any" value="25"><span>%</span></div></div>
+            <div><label for="mt">Maintenance per year</label><div class="unit"><input id="mt" type="number" inputmode="decimal" min="0" step="any" value="2000"><span class="cs">₹</span></div></div>
+            <div><label for="w">Power draw</label><div class="unit"><input id="w" type="number" inputmode="decimal" min="0" step="any" value="150"><span>W</span></div></div>
+            <div><label for="kwh">Electricity per kWh</label><div class="unit"><input id="kwh" type="number" inputmode="decimal" min="0" step="any" value="8"><span class="cs">₹</span></div></div>
+            <div><label for="eff">Waste factor</label><div class="unit"><input id="eff" type="number" inputmode="decimal" min="1" step="any" value="1.1"><span>×</span></div></div>
+            <div><label for="buf">Downtime buffer</label><div class="unit"><input id="buf" type="number" inputmode="decimal" min="1" step="any" value="1.3"><span>×</span></div></div>
+          </div>
+          <p class="note">A waste factor of 1.1 adds 10% for failed prints and purge. The buffer multiplies machine cost to cover downtime. Additional upfront cost covers things like an enclosure, tools, or spare parts.</p>
+          <h3 class="mh">Calculated metrics</h3>
+          <div class="mets" id="mets"></div>
+        </details>
+      </div>
+    </section>
+
+    <aside class="result" aria-live="polite">
+      <div class="total">
+        <div class="k">Price per unit<span id="partName"></span></div>
+        <div class="big" id="sell">–</div>
+        <div class="s" id="sellSub"></div>
+        <button type="button" id="save">Save quote</button><button type="button" id="copy" class="sec">Copy quote</button>
+      </div>
+
+      <div class="card">
+        <h2>Pick a margin</h2>
+        <div class="tiers" role="radiogroup" aria-label="Profit margin">
+          <label class="tile"><input type="radio" name="tier" value="25"><b>Competitive</b><span class="p" data-p="25"></span><span class="t">25% margin</span></label>
+          <label class="tile"><input type="radio" name="tier" value="40" checked><b>Standard</b><span class="p" data-p="40"></span><span class="t">40% margin</span></label>
+          <label class="tile"><input type="radio" name="tier" value="60"><b>Premium</b><span class="p" data-p="60"></span><span class="t">60% margin</span></label>
+          <label class="tile"><input type="radio" name="tier" value="80"><b>Luxury</b><span class="p" data-p="80"></span><span class="t">80% margin</span></label>
+          <label class="tile custom"><input type="radio" name="tier" value="custom">
+            <span class="ct"><span><b>Custom</b><span class="p" data-p="custom"></span><span class="t"> each</span></span>
+              <span class="tot" id="cTot" hidden><span class="t">Total for <span id="cN"></span> pieces</span><span class="p" id="cTotV"></span></span></span>
+            <span class="cm">
+              <span class="cf"><span class="t">Margin</span><input id="cm" type="number" inputmode="decimal" max="95" step="any" value="50" aria-label="Custom margin percent"><span class="t">%</span></span>
+              <span class="cf"><span class="t">Price each</span><input id="cp" type="number" inputmode="decimal" min="0" step="any" aria-label="Custom price per piece" style="width:110px"></span>
+            </span>
+            <span class="t" id="cWarn"></span></label>
+        </div>
+        <p class="note">Margin is the share of the selling price that is profit. In Custom you can type a margin or your own price for each piece. Your own price includes GST if you set a GST rate.</p>
+      </div>
+
+      <div class="card">
+        <h2>Price by quantity</h2>
+        <div class="qb" id="qb"></div>
+        <p class="note" id="qbNote"></p>
+      </div>
+
+      <div class="card">
+        <h2>Cost breakdown</h2>
+        <div class="rows" id="rows"></div>
+      </div>
+
+      <div class="card">
+        <h2>Saved quotes</h2>
+        <p class="note" style="margin:0 0 6px" id="sqn"></p>
+        <button type="button" class="link" id="toDash" style="padding-left:0">Open dashboard</button>
+        <p class="note">Quotes are saved in this browser only.</p>
+      </div>
+    </aside>
+  </div>
+
+  <section class="info" id="how">
+    <h2>How to use the calculator</h2>
+    <ol class="steps">
+      <li>Pick filament or resin. Add a row for each colour or material in the part, with its price and weight.</li>
+      <li>Enter the weight (or resin volume) and print time that your slicer shows.</li>
+      <li>Add hands-on time, hardware and packaging. For a batch, set the units, setup time and failure rate.</li>
+      <li>Open printer and energy settings if your printer price, power draw or electricity rate is different.</li>
+      <li>Pick a margin, add your GST rate, and save the quote.</li>
+    </ol>
+  </section>
+
+  <section class="info" id="formulas">
+    <h2>How the cost is worked out</h2>
+    <div class="card">
+      <dl class="f">
+        <dt>Material</dt><dd>for each filament, weight (g) ÷ 1000 × price per kg; add them up, then × waste factor</dd>
+        <dt>Machine and energy</dt><dd>print hours × (depreciation + maintenance + electricity per hour) × downtime buffer</dd>
+        <dt>Depreciation per hour</dt><dd>(printer price + upfront cost) ÷ (lifespan in years × 8,760 h × uptime)</dd>
+        <dt>Electricity per hour</dt><dd>power (W) ÷ 1000 × price per kWh</dd>
+        <dt>Labor</dt><dd>hands-on minutes ÷ 60 × hourly rate</dd>
+        <dt>Total cost</dt><dd>material + machine + labor + hardware + packaging (+ resin consumables)</dd>
+        <dt>Batch cost per unit</dt><dd>material, machine and consumables ÷ (1 − failure rate), plus setup labor ÷ units</dd>
+        <dt>Selling price</dt><dd>total cost ÷ (1 − margin), then × (1 + GST rate)</dd>
+      </dl>
+    </div>
+    <div class="card">
+      <h2>Worked example</h2>
+      <p class="note" style="margin:0 0 12px">A 50 g PLA print at ₹1,200/kg that runs for 3 hours, with 15 minutes of hands-on work and the default printer settings.</p>
+      <div class="rows" id="ex"></div>
+    </div>
+  </section>
+
+  <section class="info faq" id="faq">
+    <h2>Questions and answers</h2>
+    <details><summary>How much does it cost to 3D print something?</summary><p>It depends on the material, the print time and your labor. The worked example above, a 50 g PLA part that prints in 3 hours, costs about ₹135 to make with the default settings.</p></details>
+    <details><summary>Where do I find the weight and print time?</summary><p>Slice the model first. Most slicers, including Cura, PrusaSlicer, OrcaSlicer and Bambu Studio, show the estimated filament weight and print time on the result screen.</p></details>
+    <details><summary>What do the waste factor and buffer do?</summary><p>The waste factor adds material for failed prints, purge and supports (1.1 means 10% extra). The buffer raises machine cost to cover downtime and slow days.</p></details>
+    <details><summary>How is electricity calculated?</summary><p>Power draw in watts ÷ 1000 × your price per kWh, for each hour of printing. A 150 W printer at ₹8 per kWh uses about ₹1.20 of electricity per hour.</p></details>
+    <details><summary>How much should I charge?</summary><p>Start with your total cost and add a margin. Margin here is the share of the selling price that is profit, so 40% margin is not the same as a 40% markup. Leave room for failed prints, customer support and your time.</p></details>
+    <details><summary>How do I price a multi-colour print?</summary><p>Add one filament row for each colour or material, with the weight your slicer shows for it. The calculator adds them up. Include purge and tower waste in the weights or raise the waste factor.</p></details>
+    <details><summary>How does batch pricing work?</summary><p>Setup time (slicing, bed prep, loading) happens once per batch, so it is split across all units. The failure rate adds the cost of reprints. The Price by quantity table shows how the price per unit changes with run size.</p></details>
+    <details><summary>Does it work for resin printing?</summary><p>Yes. Switch to Resin, enter the volume in mL and your price per liter, and add a consumables cost for IPA, gloves and FEP wear. The waste factor starts at 1.2.</p></details>
+    <details><summary>How does GST work in the price?</summary><p>Enter your GST rate and the price shown includes it. Your profit is calculated before tax, because GST is collected for the government and is not part of your margin.</p></details>
+  </section>
+
+  </div>
+  <div id="vDash" hidden>
+    <h1>Dashboard</h1>
+    <p class="lede">Mark a quote Completed and it moves from Saved quotes to Completed orders. Earned counts completed orders before GST. Spent comes from the Expenditure page. Click Completed orders, Saved quotes or Quoted value for details. <button type="button" class="link" id="dToExp" style="padding:0">Add an expense</button></p>
+    <div class="kpis" id="kpis"></div>
+    <div class="card" id="kDetail" hidden></div>
+    <div class="card"><h2>Earned and spent by month</h2>
+      <div class="lg"><span><i style="background:var(--accent)"></i>Earned</span><span><i style="background:var(--hi)"></i>Spent</span></div>
+      <div id="dMonth"></div></div>
+    <div class="card"><h2>Completed orders</h2><div id="dDone"></div></div>
+    <div class="dgrid">
+      <div class="card"><h2>Quotes by status</h2><div id="dStatus"></div></div>
+      <div class="card"><h2>Material used</h2><div id="dMat"></div></div>
+    </div>
+    <div class="card"><h2>Cost and profit by quote</h2>
+      <div class="lg"><span><i style="background:var(--accent)"></i>Cost</span><span><i style="background:var(--hi)"></i>Profit</span></div>
+      <div id="dChart"></div></div>
+    <div class="card"><h2>Saved quotes</h2><div id="dList"></div>
+      <button type="button" class="link" id="clearAll" style="padding-left:0;margin-top:8px">Delete all saved quotes</button></div>
+  </div>
+  <div id="vExp" hidden>
+    <h1>Expenditure</h1>
+    <p class="lede">Record everything you spend on your print business. The total feeds the dashboard.</p>
+    <div class="kpis" id="eKpis"></div>
+    <div class="dgrid">
+      <div class="card">
+        <h2>Add an expense</h2>
+        <div class="fields">
+          <div><label for="eDate">Date</label><input id="eDate" type="date"></div>
+          <div><label for="eCat">Category</label><select id="eCat" style="width:100%"></select></div>
+          <div class="full"><label for="eDesc">Description</label><input id="eDesc" type="text" placeholder="e.g. 2 kg PLA spools"></div>
+          <div class="full"><label for="eAmt">Amount</label><div class="unit"><input id="eAmt" type="number" inputmode="decimal" min="0" step="any"><span>₹</span></div></div>
+        </div>
+        <p class="note" id="eErr" role="alert" style="color:#B3361F;min-height:1.4em"></p>
+        <button type="button" class="primary" id="addExp" style="width:100%;font:inherit;font-weight:600;background:var(--accent);color:var(--accent-ink);border:0;border-radius:10px;padding:13px;cursor:pointer">Add expense</button>
+      </div>
+      <div class="card"><h2>Spending by category</h2><div id="eCatBars"></div></div>
+    </div>
+    <div class="card"><h2>All expenses</h2><div id="eList"></div></div>
+  </div>
+  <div id="vSet" hidden>
+    <h1>Google Sheet</h1>
+    <p class="lede">Save your quotes and expenses to your own Google Sheet, so your data is backed up and you can open it on any device.</p>
+    <div class="card">
+      <h2>Connect</h2>
+      <div class="fields">
+        <div class="full"><label for="sUrl">Web app URL</label><input id="sUrl" type="url" placeholder="https://script.google.com/macros/s/.../exec"></div>
+        <div class="full"><label for="sPass">Passcode</label><input id="sPass" type="password" autocomplete="off"></div>
+      </div>
+      <p class="note" id="sMsg" role="status" style="min-height:1.4em"></p>
+      <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center">
+        <button type="button" id="sSave" style="font:inherit;font-weight:600;background:var(--accent);color:var(--accent-ink);border:0;border-radius:10px;padding:11px 18px;cursor:pointer">Save and connect</button>
+        <button type="button" class="link" id="sNow">Sync now</button>
+        <button type="button" class="link" id="sOff">Disconnect</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Set it up in 4 steps</h2>
+      <ol class="steps">
+        <li>Create a new Google Sheet.</li>
+        <li>Open Extensions, then Apps Script. Delete the sample code, paste in the code from the Code.gs file, and change the passcode at the top.</li>
+        <li>Choose Deploy, then New deployment, then Web app. Set "Execute as" to Me and "Who has access" to Anyone. Deploy, allow access, and copy the web app URL.</li>
+        <li>Paste the URL and your passcode above and press Save and connect.</li>
+      </ol>
+      <p class="note">Your URL and passcode are kept in this browser only. They are not part of the website's code.</p>
+    </div>
+  </div>
+  <footer>Shapecraft gives estimates. Check the numbers against your own costs before quoting a customer.<p class="note" id="syncStat" style="margin:6px 0 0"></p></footer>
+</div>
+
+<script>
+(function(){
+  var $=function(id){return document.getElementById(id)};
+  var tech="fdm", K="shapecraft.quotes", last={}, mats=[], cmode="margin";
+  var presets={fdm:[["PLA",1200],["PETG",1400],["ABS",1500],["TPU",2200],["Other",1200]],resin:[["Standard resin",3000],["Tough resin",4500],["Water-washable resin",3500],["Other",3000]]};
+  var profs={fdm:[["Generic FDM (₹25,000, 150 W)",25000,150],["Mid-range FDM (₹60,000, 200 W)",60000,200],["Large-format FDM (₹1,50,000, 300 W)",150000,300]],resin:[["Entry resin (₹20,000, 60 W)",20000,60],["Mid-range resin (₹60,000, 80 W)",60000,80]]};
+  var defs={fdm:{eff:1.1,pu:"₹/kg",qu:"g",cons:0},resin:{eff:1.2,pu:"₹/L",qu:"mL",cons:30}};
+  var fmt=new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR"});
+  var kOpen=null;
+  var STAT=[["Draft","var(--muted)"],["Pending","var(--hi)"],["Accepted","#5B7DB1"],["Completed","var(--accent)"],["Rejected","#B3361F"]];
+  var EK="shapecraft.expenses", CATS=["Filament and resin","Printer and parts","Electricity","Packaging and shipping","Tools and hardware","Marketing and fees","Other"];
+
+  function num(id){var v=parseFloat($(id).value);return isFinite(v)&&v>0?v:0}
+  function mk(tag,props){var e=document.createElement(tag);for(var k in props)e[k]=props[k];return e}
+  function compute(v){
+    var up=Math.max(v.up,1)/100, life=Math.max(v.life,0.1), ux=v.ux||0;
+    var dep=(v.pc+ux)/(life*8760*up), mnt=v.mt/(8760*up), elec=v.w/1000*v.kwh, perHr=dep+mnt+elec;
+    var r={invest:v.pc+ux,lifetime:v.pc+ux+v.mt*life,hoursYear:8760*up,dep:dep,mnt:mnt,elec:elec,rate:perHr*Math.max(v.buf,1),
+      material:v.mat*Math.max(v.eff,1),machine:v.hrs*perHr*Math.max(v.buf,1),labor:v.lab/60*v.rate,hw:v.hw,pk:v.pk,cons:v.cons};
+    r.total=r.material+r.machine+r.labor+r.hw+r.pk+r.cons;
+    return r;
+  }
+  function read(){
+    var v={};
+    ["eff","pc","ux","life","up","mt","w","kwh","buf","lab","rate","hw","pk","cons"].forEach(function(i){v[i]=num(i)});
+    v.mat=mats.reduce(function(a,m){return a+(m.qty||0)/1000*(m.price||0)},0);
+    v.hrs=num("hrs")+Math.min(num("min"),59)/60;
+    return v;
+  }
+
+  /* filament rows */
+  function fld(id,label,input,unit){
+    input.id=id;var d=mk("div");d.appendChild(mk("label",{htmlFor:id,textContent:label}));
+    if(unit){var u=mk("div",{className:"unit"});u.appendChild(input);u.appendChild(mk("span",{textContent:unit}));d.appendChild(u)}else d.appendChild(input);
+    return d;
+  }
+  function renderMats(){
+    var box=$("mats");box.textContent="";
+    mats.forEach(function(m,x){
+      var row=mk("div",{className:"mrow"});
+      var s=mk("select");presets[tech].forEach(function(p,i){s.appendChild(mk("option",{value:i,textContent:p[0]}))});s.value=m.i;
+      var col=mk("input",{type:"text",placeholder:"e.g. Red",value:m.color});
+      var pr=mk("input",{type:"number",min:0,step:"any",value:m.price,inputMode:"decimal"});
+      var q=mk("input",{type:"number",min:0,step:"any",value:m.qty,inputMode:"decimal"});
+      s.addEventListener("change",function(){m.i=+s.value;m.price=presets[tech][m.i][1];pr.value=m.price});
+      col.addEventListener("input",function(){m.color=col.value});
+      pr.addEventListener("input",function(){m.price=parseFloat(pr.value)||0});
+      q.addEventListener("input",function(){m.qty=parseFloat(q.value)||0});
+      row.appendChild(fld("ms"+x,"Material",s));
+      row.appendChild(fld("mc"+x,"Colour (optional)",col));
+      row.appendChild(fld("mp"+x,"Price",pr,defs[tech].pu));
+      row.appendChild(fld("mq"+x,tech==="fdm"?"Weight":"Volume",q,defs[tech].qu));
+      if(mats.length>1){
+        var rm=mk("button",{type:"button",className:"link rm",textContent:"Remove"});
+        rm.setAttribute("aria-label","Remove filament "+(x+1));
+        rm.addEventListener("click",function(){mats.splice(x,1);renderMats();calc()});
+        row.appendChild(rm);
+      }
+      box.appendChild(row);
+    });
+    $("addMat").hidden=mats.length>=8;
+  }
+  $("addMat").addEventListener("click",function(){
+    mats.push({i:0,color:"",price:presets[tech][0][1],qty:10});renderMats();calc();
+  });
+
+  function fillSel(id,list){var s=$(id);s.innerHTML="";list.forEach(function(p,i){s.appendChild(mk("option",{value:i,textContent:p[0]}))})}
+  function applyProf(){var p=profs[tech][+$("prof").value||0];$("pc").value=p[1];$("w").value=p[2]}
+  function setTech(t){
+    tech=t;var d=defs[t];
+    $("tFdm").setAttribute("aria-pressed",t==="fdm");
+    $("tResin").setAttribute("aria-pressed",t==="resin");
+    $("eff").value=d.eff;$("cons").value=d.cons;$("consW").hidden=t!=="resin";
+    fillSel("prof",profs[t]);applyProf();
+    mats=[{i:0,color:"",price:presets[t][0][1],qty:50}];renderMats();calc();
+  }
+
+  /* calculator */
+  function calc(){
+    var v=read(), c=compute(v), units=Math.max(Math.round(num("units")),1), vat=num("vat")/100;
+    var setup=num("setm")/60*num("rate"), fr=Math.min(num("fail"),90)/100;
+    var failX=(c.material+c.machine+c.cons)*(1/(1-fr)-1);
+    function ucost(q){return c.total+failX+setup/q}
+    function price(m,cost){return cost/(1-Math.min(m,95)/100)}
+    var uc=ucost(units), cm=Math.min(num("cm"),95), cpv=num("cp");
+
+    var custMode=cmode, custPrice=custMode==="price"?cpv:price(cm,uc)*(1+vat);
+    [25,40,60,80].forEach(function(t){document.querySelector('[data-p="'+t+'"]').textContent=fmt.format(price(t,uc)*(1+vat))});
+    document.querySelector('[data-p="custom"]').textContent=fmt.format(custPrice);
+    var custSell=custPrice/(1+vat), custM=custSell>0?(custSell-uc)/custSell*100:0;
+    if(custMode==="margin"&&document.activeElement!==$("cp"))$("cp").value=Math.round(custPrice*100)/100;
+    if(custMode==="price"&&document.activeElement!==$("cm"))$("cm").value=Math.round(custM*10)/10;
+    $("cTot").hidden=units<2;$("cN").textContent=units;$("cTotV").textContent=fmt.format(custPrice*units);
+    $("cWarn").textContent=custSell<uc?"⚠ Below your cost of "+fmt.format(uc)+" each.":"";
+    var sel=document.querySelector('input[name="tier"]:checked').value;
+    var m,sell,withTax;
+    if(sel==="custom"){m=custMode==="price"?custM:cm;sell=custSell;withTax=custPrice}
+    else{m=+sel;sell=price(m,uc);withTax=sell*(1+vat)}
+    var mr=Math.round(m*10)/10;
+    $("sell").textContent=fmt.format(withTax);
+    $("sellSub").textContent=(vat>0?fmt.format(sell)+" before GST · ":"")+"profit "+fmt.format(sell-uc)+" per unit at "+mr+"% margin"+(units>1?" · Batch of "+units+": "+fmt.format(withTax*units):"");
+    var nm=$("part").value.trim();
+    $("partName").textContent=nm?" for "+nm:"";
+
+    var items=[["Material",c.material],["Machine and energy",c.machine],["Labor",c.labor],["Hardware",c.hw],["Packaging",c.pk]];
+    if(tech==="resin"||c.cons>0)items.push(["Consumables",c.cons]);
+    if(failX>0)items.push(["Failed print allowance",failX]);
+    if(setup>0)items.push(["Batch setup (shared)",setup/units]);
+    var h="";
+    items.forEach(function(it){
+      var pct=uc>0?it[1]/uc*100:0;
+      h+='<div class="r"><span>'+it[0]+' <small>'+Math.round(pct)+'%</small></span><span>'+fmt.format(it[1])+'</span><div class="bar"><i style="width:'+pct.toFixed(1)+'%"></i></div></div>';
+    });
+    h+='<div class="r sum"><span>Total cost per unit</span><span>'+fmt.format(uc)+'</span></div>';
+    if(units>1)h+='<div class="r"><span>Total for '+units+' units</span><span>'+fmt.format(uc*units)+'</span></div>';
+    $("rows").innerHTML=h;
+
+    var qs=[1,5,10,25,50,100];if(qs.indexOf(units)<0)qs.push(units);qs.sort(function(a,b){return a-b});
+    var qh='<div class="h">Units</div><div class="h">Cost each</div><div class="h">Price each</div><div class="h">Batch total</div>';
+    qs.forEach(function(q){
+      var cc=ucost(q),pp=(sel==="custom"&&custMode==="price")?custPrice:price(m,cc)*(1+vat),on=q===units?' class="on"':'';
+      qh+='<div'+on+'>'+q+'</div><div'+on+'>'+fmt.format(cc)+'</div><div'+on+'>'+fmt.format(pp)+'</div><div'+on+'>'+fmt.format(pp*q)+'</div>';
+    });
+    $("qb").innerHTML=qh;
+    $("qbNote").textContent=setup>0?"Setup time is shared across the batch, so bigger runs cost less per unit.":"Add setup time per batch above to see the price per unit fall as quantity grows.";
+
+    var d=defs[tech];
+    var mm=mats.map(function(x){return {n:presets[tech][x.i][0],c:x.color,q:(x.qty||0)*units,u:d.qu}});
+    var mtxt=mats.map(function(x){return presets[tech][x.i][0]+(x.color?" ("+x.color+")":"")+" "+(x.qty||0)+" "+d.qu}).join(", ");
+    last={nm:nm,tech:tech,units:units,unitCost:uc,unitPrice:sell,priceTax:withTax,m:mr,vat:vat,hours:v.hrs*units,mats:mm,mtxt:mtxt,t:Date.now()};
+
+    var mt=[["Total investment",fmt.format(c.invest)],["Lifetime cost",fmt.format(c.lifetime)],["Estimated uptime",Math.round(c.hoursYear).toLocaleString("en-IN")+" hrs/year"],["Printer depreciation",fmt.format(c.dep)+"/hr"],["Maintenance cost",fmt.format(c.mnt)+"/hr"],["Electricity cost",fmt.format(c.elec)+"/hr"],["Total printer cost",fmt.format(c.rate)+"/hr"]];
+    $("mets").innerHTML=mt.map(function(x,i){return '<div class="met'+(i===6?' key':'')+'"><span>'+x[0]+'</span><b>'+x[1]+'</b></div>'}).join("");
+  }
+
+  /* storage */
+  function load(){try{return JSON.parse(localStorage.getItem(K)||"[]")}catch(e){return []}}
+  function store(a){try{localStorage.setItem(K,JSON.stringify(a))}catch(e){}markDirty()}
+  function updSq(){var n=load().filter(function(q){return q.status!=="Completed"}).length;$("sqn").textContent=n?n+(n===1?" quote":" quotes")+" saved.":"Nothing saved yet."}
+  $("save").addEventListener("click",function(){
+    var a=load(),o=Object.assign({id:Date.now(),status:"Draft"},last);
+    o.nm=o.nm||"Untitled part";a.unshift(o);store(a.slice(0,500));updSq();
+    var b=this;b.textContent="Saved";setTimeout(function(){b.textContent="Save quote"},1400);
+  });
+  $("copy").addEventListener("click",function(){
+    var b=this,t="Quote"+(last.nm?": "+last.nm:"")+"\nMaterials: "+last.mtxt+"\nUnits: "+last.units+"\nCost per unit: "+fmt.format(last.unitCost)+"\nPrice per unit ("+last.m+"% margin): "+fmt.format(last.unitPrice)+"\n"+(last.vat>0?"Price per unit incl. GST: "+fmt.format(last.priceTax)+"\n":"");
+    function done(msg){b.textContent=msg;setTimeout(function(){b.textContent="Copy quote"},1600)}
+    try{navigator.clipboard.writeText(t).then(function(){done("Copied")},function(){done("Copy failed")})}
+    catch(err){done("Copy failed")}
+  });
+
+  /* dashboard */
+  function hbar(label,segs,val){
+    var r=mk("div",{className:"hb"});
+    r.appendChild(mk("span",{textContent:label}));
+    var tr=mk("div",{className:"tr"});
+    segs.forEach(function(s){var i=mk("i");i.style.width=Math.max(s[0],0).toFixed(1)+"%";i.style.background=s[1];tr.appendChild(i)});
+    r.appendChild(tr);r.appendChild(mk("span",{textContent:val}));
+    return r;
+  }
+  function empty(box,msg){box.appendChild(mk("p",{className:"note",textContent:msg}))}
+  function dstr(t){return new Date(t).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}
+  function pctTxt(v,c){return v>0?" ("+Math.round((v-c)/v*100)+"%)":""}
+  function quoteRow(x,meta){
+    var row=mk("div",{className:"drow"});
+    row.appendChild(mk("strong",{textContent:x.q.nm}));
+    var s=mk("select");STAT.forEach(function(t){s.appendChild(mk("option",{value:t[0],textContent:t[0]}))});s.value=x.st;
+    s.setAttribute("aria-label","Status of "+x.q.nm);
+    s.addEventListener("change",function(){
+      var all=load();
+      if(all[x.i]){all[x.i].status=s.value;if(s.value==="Completed")all[x.i].done=all[x.i].done||Date.now();else delete all[x.i].done;store(all)}
+      updSq();renderDash();
+    });
+    row.appendChild(s);
+    var rm=mk("button",{type:"button",className:"link",textContent:"Remove"});
+    rm.setAttribute("aria-label","Remove quote for "+x.q.nm);
+    rm.addEventListener("click",function(){var all=load();all.splice(x.i,1);store(all);updSq();renderDash()});
+    row.appendChild(rm);
+    row.appendChild(mk("div",{className:"dm",textContent:meta}));
+    return row;
+  }
+  function detail(x){
+    var d=mk("div",{className:"qd"}),t=mk("div",{className:"qt"});
+    t.appendChild(mk("strong",{textContent:x.q.nm}));t.appendChild(mk("strong",{textContent:fmt.format(x.val)}));
+    d.appendChild(t);
+    var done=x.st==="Completed";
+    d.appendChild(mk("p",{textContent:(done?"Completed "+dstr(x.q.done||x.q.t||x.q.id||Date.now()):"Saved "+dstr(x.q.t||x.q.id||Date.now())+" · "+x.st)+" · "+x.u+(x.u===1?" piece":" pieces")}));
+    if(x.q.mats&&x.q.mats.length)d.appendChild(mk("p",{textContent:"Materials: "+x.q.mats.map(function(m){return m.n+(m.c?" ("+m.c+")":"")+" "+Math.round(m.q).toLocaleString("en-IN")+" "+m.u}).join(", ")}));
+    d.appendChild(mk("p",{textContent:"Cost "+fmt.format(x.cost)+" · Price "+fmt.format(x.val)+" before GST · Profit "+fmt.format(x.val-x.cost)+pctTxt(x.val,x.cost)}));
+    if(x.hrs)d.appendChild(mk("p",{textContent:"Print time "+(Math.round(x.hrs*10)/10)+" hrs"}));
+    return d;
+  }
+  function renderDash(){
+    var a=load(), xs=loadX();
+    var n=a.map(function(q,i){var u=q.units||1;return {q:q,i:i,u:u,cost:(q.unitCost||0)*u,val:(q.unitPrice!=null?q.unitPrice:(q.price||0))*u,hrs:q.hours||0,st:q.status||"Draft"}});
+    var doneArr=n.filter(function(x){return x.st==="Completed"}).sort(function(p,q){return (q.q.done||q.q.t||0)-(p.q.done||p.q.t||0)});
+    var saved=n.filter(function(x){return x.st!=="Completed"});
+    var val=0,hrs=0,acc=0,earned=0,doneCost=0,spent=0;
+    n.forEach(function(x){hrs+=x.hrs});
+    saved.forEach(function(x){val+=x.val;if(x.st==="Accepted")acc+=x.val});
+    doneArr.forEach(function(x){earned+=x.val;doneCost+=x.cost});
+    xs.forEach(function(e){spent+=e.a});
+    var k=[["Completed orders",String(doneArr.length),"","done"],["Total earned",fmt.format(earned),"completed orders, before GST","done"],["Total spent",fmt.format(spent),xs.length+(xs.length===1?" expense":" expenses")+" recorded"],["Net profit",fmt.format(earned-spent),"earned minus spent"],["Saved quotes",String(saved.length),"not yet completed","saved"],["Quoted value",fmt.format(val),"saved quotes, before GST","value"],["Accepted, not completed",fmt.format(acc),"waiting to be delivered"],["Print time",(Math.round(hrs*10)/10).toLocaleString("en-IN")+" hrs",""]];
+    $("kpis").innerHTML=k.map(function(x){
+      var inner='<span>'+x[0]+(x[3]?' <i class="chev" aria-hidden="true">'+(kOpen===x[3]?'▴':'▾')+'</i>':'')+'</span><b>'+x[1]+'</b><small class="note" style="margin:0">'+x[2]+'</small>';
+      return x[3]?'<button type="button" class="kpi" data-k="'+x[3]+'" aria-expanded="'+(kOpen===x[3])+'" aria-controls="kDetail">'+inner+'</button>':'<div class="kpi">'+inner+'</div>';
+    }).join("");
+
+    var kd=$("kDetail");kd.textContent="";kd.hidden=!kOpen;
+    if(kOpen){
+      kd.appendChild(mk("h2",{textContent:{done:"Completed orders",saved:"Saved quotes",value:"Quoted value by quote"}[kOpen]}));
+      var list=kOpen==="done"?doneArr:saved;
+      if(!list.length)empty(kd,kOpen==="done"?"No completed orders yet.":"No saved quotes.");
+      else if(kOpen==="value"){
+        var srt=list.slice().sort(function(p,q){return q.val-p.val}),top=srt[0].val||1;
+        srt.forEach(function(x){kd.appendChild(hbar(x.q.nm,[[x.val/top*100,"var(--accent)"]],fmt.format(x.val)))});
+        STAT.filter(function(t){return t[0]!=="Completed"}).forEach(function(t){
+          var sv=0,c=0;list.forEach(function(x){if(x.st===t[0]){sv+=x.val;c++}});
+          if(c)kd.appendChild(mk("p",{className:"note",textContent:t[0]+": "+fmt.format(sv)+" across "+c+(c===1?" quote":" quotes")}));
+        });
+      }else{
+        var tv=0,tc=0;list.forEach(function(x){tv+=x.val;tc+=x.cost});
+        kd.appendChild(mk("p",{className:"note",textContent:list.length+(list.length===1?" order":" orders")+" · price "+fmt.format(tv)+" · cost "+fmt.format(tc)+" · profit "+fmt.format(tv-tc)+pctTxt(tv,tc)}));
+        list.forEach(function(x){kd.appendChild(detail(x))});
+      }
+    }
+
+    var mo={};
+    function add(key,f,v){mo[key]=mo[key]||{e:0,s:0};mo[key][f]+=v}
+    function ymd(t){var d=new Date(t);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")}
+    doneArr.forEach(function(x){add(ymd(x.q.done||x.q.t||Date.now()),"e",x.val)});
+    xs.forEach(function(e){add(e.d.slice(0,7),"s",e.a)});
+    var ks=Object.keys(mo).sort().slice(-6), bmo=$("dMonth");bmo.textContent="";
+    if(!ks.length)empty(bmo,"Mark orders as Completed and add expenses to see this chart.");
+    var mm=Math.max.apply(null,ks.map(function(m){return Math.max(mo[m].e,mo[m].s)}))||1;
+    ks.forEach(function(m){
+      bmo.appendChild(hbar(mlabel(m),[[mo[m].e/mm*100,"var(--accent)"]],fmt.format(mo[m].e)));
+      bmo.appendChild(hbar("",[[mo[m].s/mm*100,"var(--hi)"]],fmt.format(mo[m].s)));
+      bmo.lastChild.style.marginBottom="18px";
+    });
+
+    var bd=$("dDone");bd.textContent="";
+    if(!doneArr.length)empty(bd,"No completed orders yet. Set a saved quote's status to Completed below.");
+    doneArr.slice(0,20).forEach(function(x){
+      bd.appendChild(quoteRow(x,x.u+" pcs · completed "+dstr(x.q.done||x.q.t||Date.now())+" · earned "+fmt.format(x.val)+" · profit "+fmt.format(x.val-x.cost)));
+    });
+
+    var bs=$("dStatus"),bm=$("dMat"),bc=$("dChart"),bl=$("dList");
+    [bs,bm,bc,bl].forEach(function(b){b.textContent=""});
+    if(!n.length){["Save a quote from the calculator to see statuses here.","Material totals appear here once you save quotes.","The chart appears once you save quotes.","No saved quotes."].forEach(function(t,i){empty([bs,bm,bc,bl][i],t)});return}
+
+    STAT.forEach(function(s){
+      var cnt=n.filter(function(x){return x.st===s[0]}).length;
+      bs.appendChild(hbar(s[0],[[cnt/n.length*100,s[1]]],String(cnt)));
+    });
+    var agg={},mx=0;
+    n.forEach(function(x){(x.q.mats||[]).forEach(function(m){var key=m.n+"|"+m.u;agg[key]=(agg[key]||0)+m.q})});
+    var keys=Object.keys(agg).sort(function(p,q){return agg[q]-agg[p]});
+    keys.forEach(function(key){mx=Math.max(mx,agg[key])});
+    if(!keys.length)empty(bm,"Quotes saved earlier have no material details.");
+    keys.forEach(function(key){var p=key.split("|");bm.appendChild(hbar(p[0],[[agg[key]/mx*100,"var(--accent)"]],Math.round(agg[key]).toLocaleString("en-IN")+" "+p[1]))});
+
+    var top=n.slice(0,10),mv=Math.max.apply(null,top.map(function(x){return x.val}))||1;
+    top.forEach(function(x){bc.appendChild(hbar(x.q.nm,[[x.cost/mv*100,"var(--accent)"],[Math.max(x.val-x.cost,0)/mv*100,"var(--hi)"]],fmt.format(x.val)))});
+
+    if(!saved.length)empty(bl,"No saved quotes. Completed orders are listed above.");
+    saved.forEach(function(x){
+      bl.appendChild(quoteRow(x,x.u+" pcs · "+fmt.format(x.cost/x.u)+" cost each · "+fmt.format(x.val/x.u)+" price each · profit "+fmt.format(x.val-x.cost)));
+    });
+  }
+  $("kpis").addEventListener("click",function(e){
+    var t=e.target.closest?e.target.closest(".kpi[data-k]"):null;
+    if(!t)return;
+    var key=t.getAttribute("data-k");
+    kOpen=kOpen===key?null:key;
+    renderDash();
+    var b=$("kpis").querySelector('[data-k="'+key+'"]');if(b)b.focus();
+  });
+
+  /* expenditure */
+  function loadX(){try{return JSON.parse(localStorage.getItem(EK)||"[]")}catch(e){return []}}
+  function storeX(a){try{localStorage.setItem(EK,JSON.stringify(a))}catch(e){}markDirty()}
+  function today(){var d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+  function mlabel(k){var p=k.split("-");return new Date(+p[0],+p[1]-1,1).toLocaleString("en-IN",{month:"short",year:"numeric"})}
+  function dlabel(d){var p=d.split("-");return new Date(+p[0],+p[1]-1,+p[2]).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}
+  function renderExp(){
+    var a=loadX().slice().sort(function(x,y){return x.d<y.d?1:x.d>y.d?-1:y.id-x.id});
+    var total=0,mo=0,cur=today().slice(0,7),cat={};
+    a.forEach(function(e){total+=e.a;if(e.d.slice(0,7)===cur)mo+=e.a;cat[e.c]=(cat[e.c]||0)+e.a});
+    var keys=Object.keys(cat).sort(function(p,q){return cat[q]-cat[p]});
+    var k=[["Total spent",fmt.format(total),"all time"],["This month",fmt.format(mo),mlabel(cur)],["Biggest category",keys.length?keys[0]:"None yet",keys.length?fmt.format(cat[keys[0]]):""],["Expenses recorded",String(a.length),""]];
+    $("eKpis").innerHTML=k.map(function(x){return '<div class="kpi"><span>'+x[0]+'</span><b style="font-size:'+(x[0]==="Biggest category"?'18px':'24px')+'">'+x[1]+'</b><small class="note" style="margin:0">'+x[2]+'</small></div>'}).join("");
+    var bc=$("eCatBars"),bl=$("eList");bc.textContent="";bl.textContent="";
+    if(!a.length){empty(bc,"Category totals appear after you add an expense.");empty(bl,"No expenses yet. Add your first one above.");return}
+    keys.forEach(function(c){bc.appendChild(hbar(c,[[cat[c]/total*100,"var(--hi)"]],fmt.format(cat[c])))});
+    a.forEach(function(e){
+      var row=mk("div",{className:"drow"});
+      row.appendChild(mk("strong",{textContent:e.n}));
+      row.appendChild(mk("span",{textContent:fmt.format(e.a)}));
+      var rm=mk("button",{type:"button",className:"link",textContent:"Remove"});
+      rm.setAttribute("aria-label","Remove expense "+e.n);
+      rm.addEventListener("click",function(){storeX(loadX().filter(function(x){return x.id!==e.id}));renderExp()});
+      row.appendChild(rm);
+      row.appendChild(mk("div",{className:"dm",textContent:dlabel(e.d)+" · "+e.c}));
+      bl.appendChild(row);
+    });
+  }
+  $("addExp").addEventListener("click",function(){
+    var amt=parseFloat($("eAmt").value),d=$("eDate").value,err=$("eErr");
+    if(!d){err.textContent="Choose a date.";$("eDate").focus();return}
+    if(!isFinite(amt)||amt<=0){err.textContent="Enter an amount greater than zero.";$("eAmt").focus();return}
+    err.textContent="";
+    var all=loadX();all.push({id:Date.now(),d:d,c:$("eCat").value,n:$("eDesc").value.trim()||$("eCat").value,a:amt});
+    storeX(all);$("eAmt").value="";$("eDesc").value="";renderExp();
+  });
+  CATS.forEach(function(c){$("eCat").appendChild(mk("option",{value:c,textContent:c}))});
+  $("eDate").value=today();
+
+  var armed=false;
+  $("clearAll").addEventListener("click",function(){
+    if(!armed){armed=true;this.textContent="Click again to delete all quotes";var b=this;setTimeout(function(){armed=false;b.textContent="Delete all saved quotes"},3000);return}
+    armed=false;this.textContent="Delete all saved quotes";store(load().filter(function(q){return q.status==="Completed"}));updSq();renderDash();
+  });
+
+  /* Google Sheet sync */
+  var SK="shapecraft.sheet", DK="shapecraft.dirty", pushT=null;
+  function cfg(){try{return JSON.parse(localStorage.getItem(SK)||"null")}catch(e){return null}}
+  function setStat(t){["sMsg","syncStat"].forEach(function(id){var e=$(id);if(e)e.textContent=t})}
+  function hhmm(){return new Date().toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"})}
+  function syncFail(err){setStat(err&&err.message==="Wrong passcode"?"The passcode doesn't match the one in your Apps Script.":"Couldn't reach your Google Sheet. Check the URL, the passcode, and that the web app is shared with Anyone. Your data is safe on this device.")}
+  function markDirty(){
+    if(!cfg())return;
+    try{localStorage.setItem(DK,"1")}catch(e){}
+    clearTimeout(pushT);pushT=setTimeout(push,800);
+  }
+  function push(){
+    var c=cfg();if(!c)return Promise.resolve();
+    setStat("Saving to your Google Sheet…");
+    return fetch(c.url,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({pass:c.pass,quotes:load(),expenses:loadX()})})
+      .then(function(r){return r.json()})
+      .then(function(j){
+        if(j.error)throw new Error(j.error);
+        try{localStorage.removeItem(DK)}catch(e){}
+        setStat("Saved to your Google Sheet at "+hhmm()+".");
+      }).catch(syncFail);
+  }
+  function merge(a,b){
+    var seen={},out=[];
+    (a||[]).concat(b||[]).forEach(function(x){if(x.id==null){out.push(x);return}if(!seen[x.id]){seen[x.id]=1;out.push(x)}});
+    return out.sort(function(p,q){return (q.id||0)-(p.id||0)});
+  }
+  function refresh(){if(!$("vDash").hidden)renderDash();if(!$("vExp").hidden)renderExp()}
+  function pull(first){
+    var c=cfg();if(!c)return Promise.resolve();
+    setStat("Loading from your Google Sheet…");
+    return fetch(c.url+(c.url.indexOf("?")<0?"?":"&")+"pass="+encodeURIComponent(c.pass))
+      .then(function(r){return r.json()})
+      .then(function(j){
+        if(j.error)throw new Error(j.error);
+        var rq=j.quotes||[],rx=j.expenses||[],q=rq,x=rx;
+        if(first){q=merge(rq,load());x=merge(rx,loadX())}
+        else if(!rq.length&&!rx.length&&(load().length||loadX().length))return push();
+        try{localStorage.setItem(K,JSON.stringify(q));localStorage.setItem(EK,JSON.stringify(x))}catch(e){}
+        updSq();refresh();
+        if(first)return push();
+        setStat("Loaded from your Google Sheet at "+hhmm()+".");
+      }).catch(syncFail);
+  }
+  function sync(){var d=false;try{d=!!localStorage.getItem(DK)}catch(e){}return d?push():pull(false)}
+  $("sSave").addEventListener("click",function(){
+    var url=$("sUrl").value.trim(),pass=$("sPass").value;
+    if(!/^https:\/\/script\.google\.com\/.+\/exec$/.test(url)){setStat("Paste the web app URL. It ends in /exec.");return}
+    if(!pass){setStat("Enter the passcode you set in the Apps Script.");return}
+    try{localStorage.setItem(SK,JSON.stringify({url:url,pass:pass}))}catch(e){setStat("This browser blocked saving the settings.");return}
+    pull(true);
+  });
+  $("sNow").addEventListener("click",function(){if(!cfg()){setStat("Connect a Google Sheet first.");return}sync()});
+  $("sOff").addEventListener("click",function(){
+    try{localStorage.removeItem(SK);localStorage.removeItem(DK)}catch(e){}
+    $("sUrl").value="";$("sPass").value="";
+    setStat("Disconnected. Your data stays on this device.");
+  });
+
+  /* views */
+  function show(v){
+    $("vCalc").hidden=v!=="calc";$("vDash").hidden=v!=="dash";$("vExp").hidden=v!=="exp";$("vSet").hidden=v!=="set";
+    [["calc","navCalc"],["dash","navDash"],["exp","navExp"],["set","navSet"]].forEach(function(p){var b=$(p[1]);if(v===p[0])b.setAttribute("aria-current","page");else b.removeAttribute("aria-current")});
+    if(v==="dash")renderDash();
+    if(v==="exp")renderExp();
+    if(v==="set"){var c=cfg();$("sUrl").value=c?c.url:"";$("sPass").value=c?c.pass:""}
+    window.scrollTo(0,0);
+  }
+  $("navCalc").addEventListener("click",function(){show("calc")});
+  $("navDash").addEventListener("click",function(){show("dash")});
+  $("toDash").addEventListener("click",function(){show("dash")});
+  $("navExp").addEventListener("click",function(){show("exp")});
+  $("navSet").addEventListener("click",function(){show("set")});
+  $("dToExp").addEventListener("click",function(){show("exp")});
+  Array.prototype.forEach.call(document.querySelectorAll('.nav a'),function(a){a.addEventListener("click",function(){if($("vCalc").hidden)show("calc")})});
+
+  document.addEventListener("input",function(e){
+    if(e.target.id==="cm"||e.target.id==="cp"){cmode=e.target.id==="cp"?"price":"margin";document.querySelector('input[name="tier"][value="custom"]').checked=true}
+    if($("vCalc").hidden)return;
+    calc();
+  });
+  document.addEventListener("change",function(e){if($("vCalc").hidden)return;if(e.target.id==="prof")applyProf();calc()});
+  $("tFdm").addEventListener("click",function(){setTech("fdm")});
+  $("tResin").addEventListener("click",function(){setTech("resin")});
+
+  var ex=compute({mat:60,eff:1.1,hrs:3,pc:25000,ux:0,life:4,up:25,mt:2000,w:150,kwh:8,buf:1.3,lab:15,rate:200,hw:0,pk:0,cons:0});
+  var rows=[["Material: 50 g × ₹1,200/kg × 1.1",ex.material],["Machine and energy: 3 h",ex.machine],["Labor: 15 min at ₹200/h",ex.labor],["Total cost",ex.total],["Selling price at 40% margin",ex.total/0.6]];
+  $("ex").innerHTML=rows.map(function(r,i){return '<div class="r'+(i>=3?' sum':'')+'"><span>'+r[0]+'</span><span>'+fmt.format(r[1])+'</span></div>'}).join("");
+
+  setTech("fdm");updSq();
+  setStat(cfg()?"Google Sheet connected.":"Saved on this device only. Connect a Google Sheet to back up your data.");
+  if(cfg())sync();
+})();
+</script>
+</body>
+</html>
