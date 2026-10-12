@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Shapecraft – 3D printing cost calculator (₹)</title>
+<title>3dPERCEPTIVE – 3D printing cost calculator (₹)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Montserrat:wght@700&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#EDF0ED; --panel:#FFFFFF; --ink:#1B2422; --muted:#5E6B68; --line:#D2D9D6;
@@ -133,11 +133,12 @@ button.kpi:hover{border-color:var(--muted)}
 .qd{padding:12px 0;border-top:1px solid var(--line);font-size:14px}
 .qd .qt{display:flex;justify-content:space-between;gap:12px}
 .qd p{margin:4px 0 0;color:var(--muted);font-size:13px}
+.nav .brand{font-family:"Montserrat","Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;font-weight:700;font-size:20px;letter-spacing:.01em}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <nav class="nav"><b>Shapecraft</b><span><button type="button" class="nb" id="navCalc" aria-current="page">Calculator</button><button type="button" class="nb" id="navDash">Dashboard</button><button type="button" class="nb" id="navExp">Expenditure</button><button type="button" class="nb" id="navSet">Google Sheet</button><a href="#how">How it works</a><a href="#formulas">Formulas</a><a href="#faq">FAQ</a></span></nav>
+  <nav class="nav"><b class="brand">3dPERCEPTIVE</b><span><button type="button" class="nb" id="navCalc" aria-current="page">Calculator</button><button type="button" class="nb" id="navDash">Dashboard</button><button type="button" class="nb" id="navExp">Expenditure</button><button type="button" class="nb" id="navSet">Google Sheet</button><a href="#how">How it works</a><a href="#formulas">Formulas</a><a href="#faq">FAQ</a></span></nav>
   <div id="vCalc">
   <header id="calc">
     <div>
@@ -360,7 +361,7 @@ button.kpi:hover{border-color:var(--muted)}
       <p class="note">Your URL and passcode are kept in this browser only. They are not part of the website's code.</p>
     </div>
   </div>
-  <footer>Shapecraft gives estimates. Check the numbers against your own costs before quoting a customer.<p class="note" id="syncStat" style="margin:6px 0 0"></p></footer>
+  <footer>3dPERCEPTIVE gives estimates. Check the numbers against your own costs before quoting a customer.<p class="note" id="syncStat" style="margin:6px 0 0"></p></footer>
 </div>
 
 <script>
